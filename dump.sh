@@ -36,6 +36,6 @@ backup_db() {
 export -f backup_db
 
 # Run export job
-echo "$databases" | parallel -j 10 backup_db {} $db_user $db_pass $db_host $timestamp
+echo "$databases" | parallel -j $max_parallel backup_db {} $db_user $db_pass $db_host $timestamp
 
 echo -e "\n\nBackup completed\n"
