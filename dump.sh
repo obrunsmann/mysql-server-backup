@@ -28,12 +28,22 @@ export $(cat .env | xargs)
 # Config
 timestamp=$(date +"%Y%m%d-%H%M%S")
 
-
-# Run backup
+# Make sure backup directory exists
 mkdir -p "backup/$timestamp"
 
-# Get list of all databases
-databases=$(mysql -h $db_host -u $db_user --password="$db_pass" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|vapor)")
+# Function to cleanup old backups
+cleanup_old_backups() {
+    local backups=($(ls -t "$backup_dir" | grep "^[0-9]*-[0-9]*$"))
+    local num_backups=${#backups[@]}
+
+    if [ $num_backups -gt $max_backups ]; then
+        local num_to_delete=$((num_backups - max_backups))
+        for ((i = 0; i < num_to_delete; i++)); do
+            echo "Deleting old backup: ${backups[$i]}"
+            rm -r "$backup_dir/${backups[$i]}"
+        done
+    fi
+}
 
 # Define function for DB Export
 backup_db() {
@@ -57,7 +67,15 @@ backup_db() {
 }
 export -f backup_db
 
+# Get list of all databases
+databases=$(mysql -h $db_host -u $db_user --password="$db_pass" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|vapor)")
+
 # Run export job
 echo "$databases" | parallel -j $max_parallel backup_db {} $db_user $db_pass $db_host $timestamp
 
+# Clean up old backups
+echo "Cleaning up old backups"
+cleanup_old_backups
+
+# Done
 echo -e "\n\nBackup completed\n"
