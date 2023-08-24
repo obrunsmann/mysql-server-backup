@@ -29,11 +29,11 @@ export $(cat .env | xargs)
 timestamp=$(date +"%Y%m%d-%H%M%S")
 
 # Make sure backup directory exists
-mkdir -p "backup/$timestamp"
+mkdir -p "$backup_dir/$timestamp"
 
 # Function to cleanup old backups
 cleanup_old_backups() {
-    local backup_dir="backup/"
+    local backup_dir="$1"
     local backups=($(ls -t "$backup_dir" | grep "^[0-9]*-[0-9]*$"))
     local num_backups=${#backups[@]}
 
@@ -53,6 +53,7 @@ backup_db() {
     local db_pass="$3"
     local db_host="$4"
     local timestamp="$5"
+    local backup_dir="$6"
 
     echo "Backing up $db"
     mysqldump \
@@ -60,7 +61,7 @@ backup_db() {
         --host="$db_host" \
         --single-transaction \
         --skip-lock-tables \
-        $db | gzip > "backup/$timestamp/$db.sql.gz"
+        $db | gzip > "$backup_dir/$timestamp/$db.sql.gz"
 
     echo "Backup of $db completed"
 }
@@ -70,11 +71,11 @@ export -f backup_db
 databases=$(mysql -h $db_host -u $db_user --password="$db_pass" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|vapor)")
 
 # Run export job
-echo "$databases" | parallel -j $max_parallel backup_db {} $db_user $db_pass $db_host $timestamp
+echo "$databases" | parallel -j $max_parallel backup_db {} $db_user $db_pass $db_host $timestamp $backup_dir
 
 # Clean up old backups
 echo "Cleaning up old backups"
-cleanup_old_backups
+cleanup_old_backups $backup_dir
 
 # Done
 echo -e "\n\nBackup completed\n"
