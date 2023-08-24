@@ -1,5 +1,10 @@
 # MySQL Server Backup Tool
 
+![GitHub release (with filter)](https://img.shields.io/github/v/release/obrunsmann/mysql-server-backup)
+![GitHub repo size](https://img.shields.io/github/repo-size/obrunsmann/mysql-server-backup)
+![GitHub issues](https://img.shields.io/github/issues/obrunsmann/mysql-server-backup)
+![GitHub](https://img.shields.io/github/license/obrunsmann/mysql-server-backup)
+
 This is a simple backup script for MySQL servers, designed to help you easily back up your databases and manage your backup files. You can specify your database connection details and customize the backup settings using environment variables. This tool also provides the option to clean up old backups to save space.
 
 ## Prerequisites
