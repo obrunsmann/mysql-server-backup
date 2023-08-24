@@ -33,6 +33,7 @@ mkdir -p "backup/$timestamp"
 
 # Function to cleanup old backups
 cleanup_old_backups() {
+    local backup_dir="backup/"
     local backups=($(ls -t "$backup_dir" | grep "^[0-9]*-[0-9]*$"))
     local num_backups=${#backups[@]}
 
@@ -54,13 +55,11 @@ backup_db() {
     local timestamp="$5"
 
     echo "Backing up $db"
-    mysqlpump \
+    mysqldump \
         --user="$db_user" --password="$db_pass" \
         --host="$db_host" \
-        --set-gtid-purged=ON \
-        --exclude-tables=cache,cache_locks,sessions,jobs,password_reset_tokens \
-        --compression-algorithms=zlib,zstd \
-        --default-parallelism=8 \
+        --single-transaction \
+        --skip-lock-tables \
         $db | gzip > "backup/$timestamp/$db.sql.gz"
 
     echo "Backup of $db completed"
