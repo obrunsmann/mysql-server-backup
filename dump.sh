@@ -34,7 +34,7 @@ mkdir -p "$backup_dir/$timestamp"
 # Function to cleanup old backups
 cleanup_old_backups() {
     local backup_dir="$1"
-    local backups=($(ls -t "$backup_dir" | grep "^[0-9]*-[0-9]*$"))
+    local backups=($(ls -r -t "$backup_dir" | grep "^[0-9]*-[0-9]*$"))
     local num_backups=${#backups[@]}
 
     if [ $num_backups -gt $max_backups ]; then
