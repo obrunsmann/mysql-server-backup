@@ -12,6 +12,7 @@ This is a simple backup script for MySQL servers, designed to help you easily ba
 Before you can use this tool, make sure you have the following prerequisites installed on your system:
 
 - **MySQL Client**: Ensure that you have the MySQL client installed to interact with your MySQL databases.
+- **GNU Parallel**: Required to run backup jobs concurrently.
 
 ## Setup
 
@@ -33,21 +34,23 @@ Before you can use this tool, make sure you have the following prerequisites ins
    - `db_host`: The hostname or IP address of your MySQL server.
    - `db_user`: The MySQL user with backup privileges.
    - `db_pass`: The password for the MySQL user.
-   - `max_parallel`: The maximum number of parallel database backups.
+   - `max_parallel`: The maximum number of parallel database backups, or `auto`.
+   - `max_parallel_cap`: Upper bound when `max_parallel=auto`.
+   - `mysql_connection_reserve`: Number of MySQL connections reserved for non-backup traffic when `max_parallel=auto`.
    - `max_backups`: The maximum number of backup sets to retain.
 
 4. Make sure the script file is executable.
 
    ```bash
-   chmod +x backup.sh
+   chmod +x dump.sh
    ```
 
 ## Usage
 
-To create database backups using this tool, simply run the `backup.sh` script:
+To create database backups using this tool, simply run the `dump.sh` script:
 
 ```bash
-./backup.sh
+./dump.sh
 ```
 
 The script will perform the following actions:
@@ -60,12 +63,36 @@ The script will perform the following actions:
 
 4. **Cleanup Old Backups**: It checks the number of backup sets and removes old backups if the number exceeds the `max_backups` setting.
 
+## Concurrency Tuning
+
+For large MySQL servers (for example 400+ databases), set:
+
+```bash
+max_parallel=auto
+max_parallel_cap=16
+mysql_connection_reserve=20
+```
+
+With `auto`, the script computes parallel jobs from:
+
+- detected CPU core count
+- MySQL `max_connections` minus `mysql_connection_reserve`
+- `max_parallel_cap`
+
+The minimum of these values is used as job count.
+
+Guidelines:
+
+- Many small databases: increase `max_parallel_cap` carefully and observe DB load.
+- Few large databases: lower cap can reduce I/O contention and stabilize runtime.
+- Busy production DB: increase `mysql_connection_reserve` to protect foreground traffic.
+
 ## Example
 
 Here's an example of how to run the backup script:
 
 ```bash
-./backup.sh
+./dump.sh
 ```
 
 ## License
