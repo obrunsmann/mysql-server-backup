@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # MIT License
 
 # Copyright (c) 2023 Oliver Brunsmann
@@ -56,14 +58,17 @@ backup_db() {
     local backup_dir="$6"
 
     echo "Backing up $db"
-    mysqldump \
+    if mysqldump \
         --user="$db_user" --password="$db_pass" \
         --host="$db_host" \
         --single-transaction \
         --skip-lock-tables \
-        $db | gzip > "$backup_dir/$timestamp/$db.sql.gz"
-
-    echo "Backup of $db completed"
+        "$db" | gzip > "$backup_dir/$timestamp/$db.sql.gz"; then
+        echo "Backup of $db completed"
+    else
+        echo "Backup of $db failed" >&2
+        return 1
+    fi
 }
 export -f backup_db
 
@@ -71,7 +76,7 @@ export -f backup_db
 databases=$(mysql -h $db_host -u $db_user --password="$db_pass" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql|sys|vapor)")
 
 # Run export job
-echo "$databases" | parallel -j $max_parallel backup_db {} $db_user $db_pass $db_host $timestamp $backup_dir
+echo "$databases" | parallel --halt soon,fail=1 -j "$max_parallel" backup_db {} "$db_user" "$db_pass" "$db_host" "$timestamp" "$backup_dir"
 
 # Clean up old backups
 echo "Cleaning up old backups"
